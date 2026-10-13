@@ -1,4 +1,5 @@
 import os.path
+from re import search
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -12,10 +13,9 @@ SCOPES = ["https://www.googleapis.com/auth/drive.metadata.readonly"]
 
 def main():
 
+    # Get credentials
     creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
+    # Attempt to get credentials from token.json.
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
     # If there are no (valid) credentials available, let the user log in.
@@ -31,25 +31,57 @@ def main():
         with open("token.json", "w") as token:
             token.write(creds.to_json())
 
+    # Query for files to be renamed
+    service = build("drive", "v3", credentials=creds)
+    all_files = []
+    folders_to_search = ["1AdNiRtNL8Yxd9uQbZTM54RkoHmc67y94"]
+
     try:
-        service = build("drive", "v3", credentials=creds)
+        # recursive search from given folder above in folders_to_search
+        while folders_to_search:
+            curr_folder_id = folders_to_search.pop()
+            page_token = None
 
-        # Call the Drive v3 API
-        results = (
-            service.files()
-            .list(
-                q="trashed = false and mimeType='image/jpeg'",
-                orderBy="modifiedTime desc",
-                corpora="user",
-                fields="files(id, name)",
-                pageSize=25,
-            )
-            .execute()
-        )
-        items = results.get("files", [])
+            while True:
+                response = (
+                    service.files()
+                    .list(
+                        q=f"'{curr_folder_id}' in parents and trashed = false",
+                        fields="nextPageToken, files(id, name, mimeType)",
+                        pageSize=1000,
+                        supportsAllDrives=True,
+                        includeItemsFromAllDrives=True,
+                        pageToken=page_token,
+                    )
+                    .execute()
+                )
 
-        for file in items:
-            print(file["name"])
+                for item in response.get("files", []):
+                    if (
+                        item.get("mimeType")
+                        == "application/vnd.google-apps.folder"
+                    ):  # if folder, add to search list
+                        folders_to_search.append(item.get("id"))
+                    elif (
+                        item.get("mimeType")
+                        == "image/jpeg"
+                    ):  # if jpeg image, record
+                        all_files.append(item)
+
+                page_token = response.get("nextPageToken")
+                if not page_token:
+                    break
+
+        p = r'^[0-9]+_[0-9]+\.jpg$'
+        to_be_renamed = []
+        for file in all_files:
+            match = search(p, file["name"])
+            if match:
+                to_be_renamed.append(file)
+
+        # Output files to be renamed
+        for file in to_be_renamed:
+            print(f"{file["id"]} - {file["name"]}")
 
 
     except HttpError as error:
