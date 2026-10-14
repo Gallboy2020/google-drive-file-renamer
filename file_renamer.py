@@ -8,8 +8,13 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ["https://www.googleapis.com/auth/drive.metadata.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/drive.metadata"]
 
+
+def rename_file(service, fileID, new_name):
+    body = {'name': new_name}
+    service.files().update(fileId = fileID, body=body).execute()
+    # return <above>
 
 def main():
 
@@ -107,8 +112,22 @@ def main():
                             files.remove(file)
                     groups.append(group)
 
+        # rename based on groups
         for group in groups:
-            print(group)
+            if len(group) == 1:
+                name = group[0]["name"]
+                new_name = f"{name[2:4]}-{name[4:6]}-{name[6:8]}.jpg"
+                print(f"Would rename file {name} to {new_name}")
+                # rename_file(group[0]["id"], new_name)
+            else:
+                name = group[0]["name"]  # all files are from same date
+                name_date = f"{name[2:4]}-{name[4:6]}-{name[6:8]}"
+                num = 1
+                for file in group:
+                    new_name = f"{name_date}_{num}.jpg"
+                    print(f"Would rename file {file["name"]} to {new_name}")
+                    # rename_file(file["id"], new_name)
+                    num += 1
 
 
     except HttpError as error:
