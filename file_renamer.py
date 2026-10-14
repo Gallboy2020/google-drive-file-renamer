@@ -47,7 +47,7 @@ def main():
                     service.files()
                     .list(
                         q=f"'{curr_folder_id}' in parents and trashed = false",
-                        fields="nextPageToken, files(id, name, mimeType)",
+                        fields="nextPageToken, files(id, name, mimeType, parents)",
                         pageSize=1000,
                         supportsAllDrives=True,
                         includeItemsFromAllDrives=True,
@@ -72,16 +72,43 @@ def main():
                 if not page_token:
                     break
 
-        p = r'^[0-9]+_[0-9]+\.jpg$'
+        # extract files that need to be renamed
+        p = r'^[0-9]+_[0-9]+\.jpg$'  # e.g. 20261012_202436.jpg
         to_be_renamed = []
         for file in all_files:
             match = search(p, file["name"])
             if match:
                 to_be_renamed.append(file)
 
-        # Output files to be renamed
+        # group files by folder in dictonary "folders"
+        folders = {}
         for file in to_be_renamed:
-            print(f"{file["id"]} - {file["name"]}")
+            folder = file["parents"][0]  # folder ID
+            if folder not in folders:
+                folders[folder] = [file]
+            else:
+                folders[folder].append(file)
+
+        # split files to be renamed into groups based on date
+        groups = []
+        for files in folders.values():
+            # sort files in folder by name (corresponds to date and time)
+            files.sort(key=lambda d: d["name"])
+
+            # create renaming groups
+            if len(files) == 1:  # if only one file in folder to be renamed
+                groups.append(files)
+            else:  # break up files in folder based on date
+                while files:
+                    group = [files.pop(0)]
+                    for file in files[:]:
+                        if file["name"][:8] == group[0]["name"][:8]:
+                            group.append(file)
+                            files.remove(file)
+                    groups.append(group)
+
+        for group in groups:
+            print(group)
 
 
     except HttpError as error:
