@@ -9,21 +9,18 @@ from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/drive.metadata"]
+# Folder IDs that will be searched recursively for jpeg files
+FOLDERS_TO_SEARCH = ["1AdNiRtNL8Yxd9uQbZTM54RkoHmc67y94"]  # Year2_Semester1
 
 
-def rename_file(service, fileID, new_name):
-    body = {'name': new_name}
-    service.files().update(fileId = fileID, body=body).execute()
-    # return <above>
-
-def main():
-
-    # Get credentials
+def get_credentials():
     creds = None
-    # Attempt to get credentials from token.json.
+
+    # Attempt to get credentials from token.json
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
+
+    # If there are no (valid) credentials available, let the user log in
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
@@ -36,104 +33,139 @@ def main():
         with open("token.json", "w") as token:
             token.write(creds.to_json())
 
-    # Query for files to be renamed
-    service = build("drive", "v3", credentials=creds)
-    all_files = []
-    folders_to_search = ["1AdNiRtNL8Yxd9uQbZTM54RkoHmc67y94"]
+    return creds
+
+
+def get_all_jpegs(service):
+    all_jpegs = []
+
+    # recursive search from given folders
+    to_search = FOLDERS_TO_SEARCH[:]
+    while to_search:
+        
+        curr_folder_id = to_search.pop()
+        page_token = None
+        while True:
+            # get file listing from API
+            response = (
+                service.files()
+                .list(
+                    q=f"'{curr_folder_id}' in parents and trashed = false",
+                    fields="nextPageToken, files(id, name, mimeType, parents)",
+                    pageSize=1000,
+                    pageToken=page_token,
+                )
+                .execute()
+            )
+
+            for file in response.get("files", []):
+                # if folder, add to search list
+                if (file["mimeType"] == "application/vnd.google-apps.folder"):
+                    to_search.append(file.get("id"))
+                # if jpeg image, record
+                elif file["mimeType"] == "image/jpeg":
+                    all_jpegs.append(file)
+
+            # break when no more pages to read in
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
+
+    return all_jpegs
+
+
+def get_jpegs_to_rename(all_jpegs):
+    p = r'^\d{8}_\d{6}\.jpg$'  # e.g. 20261012_202436.jpg
+    to_rename = []
+    # record all jpegs that match the format
+    for file in all_jpegs:
+        match = search(p, file["name"])
+        if match:
+            to_rename.append(file)
+
+    return to_rename
+
+
+def group_jpegs(jpegs):
+    # Group jpegs into lists for renaming together
+    # e.g.  [20261014_165136.jpg, 20261014_165157.jpg, 20261014_165210.jpg]
+    #       -> 26-10-14_1.jpg, 26-10-14_2.jpg, 26-10-14_3.jpg
+
+    # group files by parent folder into dictonary
+    folders = {}
+    for file in jpegs:
+        parent = file["parents"][0]  # parent folder ID
+        if parent not in folders:
+            folders[parent] = [file]
+        else:
+            folders[parent].append(file)
+
+    # group files in each folder by date
+    groups = []
+    for files in folders.values():
+        # sort files in folder by name (corresponds to date and time)
+        files.sort(key=lambda file: file["name"])
+
+        # create renaming groups
+        if len(files) == 1:  # if only one file in folder to be renamed
+            groups.append(files)
+        else:  # group files in folder based on date
+            while files:
+                group = [files.pop(0)]
+                for file in files[:]:
+                    # if dates match
+                    if file["name"][:8] == group[0]["name"][:8]:
+                        # group with other files with same date
+                        group.append(file)
+                        # remove from list so not grouped twice
+                        files.remove(file)
+                groups.append(group)
+
+    return groups, len(folders)
+
+
+def rename_file(service, file_id, new_name):
+    body = {'name': new_name}
+    service.files().update(fileId = file_id, body=body).execute()
+
+def rename_jpeg_groups(service, groups):
+    file_count = 0
+    for group in groups:
+        if len(group) == 1:
+            name = group[0]["name"]
+            new_name = f"{name[2:4]}-{name[4:6]}-{name[6:8]}.jpg"
+            rename_file(service, group[0]["id"], new_name)
+            file_count += 1
+        else:
+            name = group[0]["name"]  # all files are from same date
+            name_date = f"{name[2:4]}-{name[4:6]}-{name[6:8]}"
+            num = 1
+            for file in group:
+                new_name = f"{name_date}_{num}.jpg"
+                rename_file(service, file["id"], new_name)
+                num += 1
+                file_count += 1
+
+    return file_count
+
+
+def main():
+    # authenticate with Google and initialise the Drive API service
+    service = build("drive", "v3", credentials=get_credentials())
 
     try:
-        # recursive search from given folder above in folders_to_search
-        while folders_to_search:
-            curr_folder_id = folders_to_search.pop()
-            page_token = None
+        jpegs = get_all_jpegs(service)  # get all jpegs from Google Drive
 
-            while True:
-                response = (
-                    service.files()
-                    .list(
-                        q=f"'{curr_folder_id}' in parents and trashed = false",
-                        fields="nextPageToken, files(id, name, mimeType, parents)",
-                        pageSize=1000,
-                        pageToken=page_token,
-                    )
-                    .execute()
-                )
-
-                for item in response.get("files", []):
-                    if (
-                        item.get("mimeType")
-                        == "application/vnd.google-apps.folder"
-                    ):  # if folder, add to search list
-                        folders_to_search.append(item.get("id"))
-                    elif (
-                        item.get("mimeType")
-                        == "image/jpeg"
-                    ):  # if jpeg image, record
-                        all_files.append(item)
-
-                page_token = response.get("nextPageToken")
-                if not page_token:
-                    break
-
-        # extract files that need to be renamed
-        p = r'^\d{8}_\d{6}\.jpg$'  # e.g. 20261012_202436.jpg
-        to_be_renamed = []
-        for file in all_files:
-            match = search(p, file["name"])
-            if match:
-                to_be_renamed.append(file)
-
-        if not to_be_renamed:
+        to_rename = get_jpegs_to_rename(jpegs)  # filter out ones we want
+        if not to_rename:
             print("No files to be renamed.")
-            exit(0)
+            return
 
-        # group files by folder in dictonary "folders"
-        folders = {}
-        for file in to_be_renamed:
-            folder = file["parents"][0]  # folder ID
-            if folder not in folders:
-                folders[folder] = [file]
-            else:
-                folders[folder].append(file)
+        groups, folder_count = group_jpegs(to_rename)  # group for renaming
 
-        # split files to be renamed into groups based on date
-        groups = []
-        for files in folders.values():
-            # sort files in folder by name (corresponds to date and time)
-            files.sort(key=lambda d: d["name"])
+        file_count = rename_jpeg_groups(service, groups)  # rename files
 
-            # create renaming groups
-            if len(files) == 1:  # if only one file in folder to be renamed
-                groups.append(files)
-            else:  # break up files in folder based on date
-                while files:
-                    group = [files.pop(0)]
-                    for file in files[:]:
-                        if file["name"][:8] == group[0]["name"][:8]:
-                            group.append(file)
-                            files.remove(file)
-                    groups.append(group)
-
-        # rename based on groups
-        count = 0
-        for group in groups:
-            if len(group) == 1:
-                name = group[0]["name"]
-                new_name = f"{name[2:4]}-{name[4:6]}-{name[6:8]}.jpg"
-                rename_file(service, group[0]["id"], new_name)
-                count += 1
-            else:
-                name = group[0]["name"]  # all files are from same date
-                name_date = f"{name[2:4]}-{name[4:6]}-{name[6:8]}"
-                num = 1
-                for file in group:
-                    new_name = f"{name_date}_{num}.jpg"
-                    rename_file(service, file["id"], new_name)
-                    num += 1
-                    count += 1
-
-        print(f"{count} file(s) in {len(folders)} folder(s) renamed.")
-
+        print(f"Renamed {file_count} file(s) in {folder_count} folder(s).")
 
     except HttpError as error:
         # TODO(developer) - Handle errors from drive API.
