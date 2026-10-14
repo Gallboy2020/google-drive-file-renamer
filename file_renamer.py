@@ -85,6 +85,10 @@ def main():
             if match:
                 to_be_renamed.append(file)
 
+        if not to_be_renamed:
+            print("No files to be renamed.")
+            exit(0)
+
         # group files by folder in dictonary "folders"
         folders = {}
         for file in to_be_renamed:
@@ -113,21 +117,24 @@ def main():
                     groups.append(group)
 
         # rename based on groups
+        count = 0
         for group in groups:
             if len(group) == 1:
                 name = group[0]["name"]
                 new_name = f"{name[2:4]}-{name[4:6]}-{name[6:8]}.jpg"
-                print(f"Would rename file {name} to {new_name}")
-                # rename_file(group[0]["id"], new_name)
+                rename_file(service, group[0]["id"], new_name)
+                count += 1
             else:
                 name = group[0]["name"]  # all files are from same date
                 name_date = f"{name[2:4]}-{name[4:6]}-{name[6:8]}"
                 num = 1
                 for file in group:
                     new_name = f"{name_date}_{num}.jpg"
-                    print(f"Would rename file {file["name"]} to {new_name}")
-                    # rename_file(file["id"], new_name)
+                    rename_file(service, file["id"], new_name)
                     num += 1
+                    count += 1
+
+        print(f"{count} file(s) in {len(folders)} folder(s) renamed.")
 
 
     except HttpError as error:
