@@ -54,8 +54,6 @@ def main():
                         q=f"'{curr_folder_id}' in parents and trashed = false",
                         fields="nextPageToken, files(id, name, mimeType, parents)",
                         pageSize=1000,
-                        supportsAllDrives=True,
-                        includeItemsFromAllDrives=True,
                         pageToken=page_token,
                     )
                     .execute()
@@ -78,7 +76,7 @@ def main():
                     break
 
         # extract files that need to be renamed
-        p = r'^[0-9]+_[0-9]+\.jpg$'  # e.g. 20261012_202436.jpg
+        p = r'^\d{8}_\d{6}\.jpg$'  # e.g. 20261012_202436.jpg
         to_be_renamed = []
         for file in all_files:
             match = search(p, file["name"])
