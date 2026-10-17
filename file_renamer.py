@@ -1,3 +1,4 @@
+import sys
 import os.path
 from re import search
 
@@ -128,21 +129,35 @@ def rename_file(service, file_id, new_name):
     body = {'name': new_name}
     service.files().update(fileId = file_id, body=body).execute()
 
-def rename_jpeg_groups(service, groups):
+def rename_jpeg_groups(service, groups, dry_run, verbose):
+    if dry_run:
+        print("DRY-RUN MODE - would rename:")
+    elif verbose:
+        print("VERBOSE MODE - would rename:")
+
     file_count = 0
     for group in groups:
+        # if only one file in group, simply rename it
         if len(group) == 1:
             name = group[0]["name"]
             new_name = f"{name[2:4]}-{name[4:6]}-{name[6:8]}.jpg"
-            rename_file(service, group[0]["id"], new_name)
+            if dry_run or verbose:
+                print(f"{name} -> {new_name}")
+            if not dry_run:
+                rename_file(service, group[0]["id"], new_name)
             file_count += 1
+
+        # if more than one file, have to use numbering
         else:
             name = group[0]["name"]  # all files are from same date
             name_date = f"{name[2:4]}-{name[4:6]}-{name[6:8]}"
             num = 1
             for file in group:
                 new_name = f"{name_date}_{num}.jpg"
-                rename_file(service, file["id"], new_name)
+                if dry_run or verbose:
+                    print(f"{name} -> {new_name}")
+                if not dry_run:
+                    rename_file(service, file["id"], new_name)
                 num += 1
                 file_count += 1
 
@@ -150,6 +165,15 @@ def rename_jpeg_groups(service, groups):
 
 
 def main():
+    # read command line arguments for program options
+    dry_run = False
+    verbose = False
+    if len(sys.argv) == 2:
+        if sys.argv[1] == "--dry-run":
+            dry_run = True
+        elif sys.argv[1] == "--verbose":
+            verbose = True
+
     # authenticate with Google and initialise the Drive API service
     service = build("drive", "v3", credentials=get_credentials())
 
@@ -163,9 +187,18 @@ def main():
 
         groups, folder_count = group_jpegs(to_rename)  # group for renaming
 
-        file_count = rename_jpeg_groups(service, groups)  # rename files
+        file_count = rename_jpeg_groups(service, groups, dry_run, verbose)  # rename files
 
-        print(f"Renamed {file_count} file(s) in {folder_count} folder(s).")
+        if dry_run:
+            print(
+                f"\nWould have renamed {file_count} file(s) "
+                f"in {folder_count} folder(s).\n"
+            )
+        else:
+            print(
+                f"\nRenamed {file_count} file(s) "
+                f"in {folder_count} folder(s).\n"
+            )
 
     except HttpError as error:
         # TODO(developer) - Handle errors from drive API.
