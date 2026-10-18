@@ -10,8 +10,6 @@ from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/drive.metadata"]
-# Folder IDs that will be searched recursively for jpeg files
-FOLDERS_TO_SEARCH = ["1AdNiRtNL8Yxd9uQbZTM54RkoHmc67y94"]  # Year2_Semester1
 
 # Colours for command-line output
 RED_TEXT = "\033[91m"
@@ -46,37 +44,29 @@ def get_credentials():
 def get_all_jpegs(service):
     all_jpegs = []
 
-    # recursive search from given folders
-    to_search = FOLDERS_TO_SEARCH[:]
-    while to_search:
-        
-        curr_folder_id = to_search.pop()
-        page_token = None
-        while True:
-            # get file listing from API
-            response = (
-                service.files()
-                .list(
-                    q=f"'{curr_folder_id}' in parents and trashed = false",
-                    fields="nextPageToken, files(id, name, mimeType, parents)",
-                    pageSize=1000,
-                    pageToken=page_token,
-                )
-                .execute()
+    page_token = None
+    while True:
+        # get file listing from API
+        response = (
+            service.files()
+            .list(
+                # search entire drive for jpegs that aren't in the bin
+                q="mimeType = 'image/jpeg' and trashed = false",
+                fields="nextPageToken, files(id, name, mimeType, parents)",
+                pageSize=1000,
+                pageToken=page_token,
             )
+            .execute()
+        )
 
-            for file in response.get("files", []):
-                # if folder, add to search list
-                if (file["mimeType"] == "application/vnd.google-apps.folder"):
-                    to_search.append(file.get("id"))
-                # if jpeg image, record
-                elif file["mimeType"] == "image/jpeg":
-                    all_jpegs.append(file)
+        # store files for later filtering
+        for file in response.get("files", []):
+            all_jpegs.append(file)
 
-            # break when no more pages to read in
-            page_token = response.get("nextPageToken")
-            if not page_token:
-                break
+        # break when no more pages to read in
+        page_token = response.get("nextPageToken")
+        if not page_token:
+            break
 
     return all_jpegs
 
