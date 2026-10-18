@@ -13,6 +13,12 @@ SCOPES = ["https://www.googleapis.com/auth/drive.metadata"]
 # Folder IDs that will be searched recursively for jpeg files
 FOLDERS_TO_SEARCH = ["1AdNiRtNL8Yxd9uQbZTM54RkoHmc67y94"]  # Year2_Semester1
 
+# Colours for command-line output
+RED_TEXT = "\033[91m"
+YELLOW_TEXT = "\033[33m"
+MAGENTA_TEXT = "\033[35m"
+END_COLOUR = "\033[0m"
+
 
 def get_credentials():
     creds = None
@@ -131,9 +137,9 @@ def rename_file(service, file_id, new_name):
 
 def rename_jpeg_groups(service, groups, dry_run, verbose):
     if dry_run:
-        print("DRY-RUN MODE - would rename:")
+        print(f"{YELLOW_TEXT}DRY-RUN MODE{END_COLOUR} - would rename:")
     elif verbose:
-        print("VERBOSE MODE - renamed:")
+        print(f"{MAGENTA_TEXT}VERBOSE MODE{END_COLOUR} - renamed:")
 
     file_count = 0
     for group in groups:
@@ -173,6 +179,17 @@ def main():
             dry_run = True
         elif sys.argv[1] == "--verbose":
             verbose = True
+        elif sys.argv[1] == "--help":
+            with open("help.txt", "r") as f:
+                print(f.read())
+            return
+        else:
+            print(
+                f"{RED_TEXT}Invalid command-line option.\n"
+                f"See{END_COLOUR} py file_renamer.py --help "
+                f"{RED_TEXT}for options.{END_COLOUR}"
+            )
+            return
 
     # authenticate with Google and initialise the Drive API service
     service = build("drive", "v3", credentials=get_credentials())
@@ -187,7 +204,8 @@ def main():
 
         groups, folder_count = group_jpegs(to_rename)  # group for renaming
 
-        file_count = rename_jpeg_groups(service, groups, dry_run, verbose)  # rename files
+        # rename files and store number of files renamed for output
+        file_count = rename_jpeg_groups(service, groups, dry_run, verbose)
 
         if dry_run:
             print(

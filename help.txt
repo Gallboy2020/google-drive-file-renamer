@@ -1,0 +1,16 @@
+Google Drive JPEG File Renamer
+
+USAGE:
+    python file_renamer.py [--dry-run | --verbose | --help]
+
+DESCRIPTION:
+    Rename JPEG files in the configured Google Drive folder in and its
+    children based on the date and time in the existing filename. Will rename
+    files with filenames in the format "YYYYMMDD_HHMMSS.jpg". The new filename
+    will be in the format "YY-MM-DD[_1|_2|_3|...].jpg".
+    Running with no options will rename files without descriptive output.
+
+OPTIONS:
+    --dry-run       Preview renames without actually renaming the files
+    --verbose       Show same output as --dry-run but rename the files
+    --help          Show this help message and exit
