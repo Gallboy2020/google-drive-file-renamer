@@ -133,7 +133,7 @@ def rename_jpeg_groups(service, groups, dry_run, verbose):
     if dry_run:
         print("DRY-RUN MODE - would rename:")
     elif verbose:
-        print("VERBOSE MODE - would rename:")
+        print("VERBOSE MODE - renamed:")
 
     file_count = 0
     for group in groups:
@@ -155,7 +155,7 @@ def rename_jpeg_groups(service, groups, dry_run, verbose):
             for file in group:
                 new_name = f"{name_date}_{num}.jpg"
                 if dry_run or verbose:
-                    print(f"{name} -> {new_name}")
+                    print(f"{file["name"]} -> {new_name}")
                 if not dry_run:
                     rename_file(service, file["id"], new_name)
                 num += 1
@@ -201,7 +201,6 @@ def main():
             )
 
     except HttpError as error:
-        # TODO(developer) - Handle errors from drive API.
         print(f"An error occurred: {error}")
 
 
