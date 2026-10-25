@@ -175,6 +175,14 @@ def rename_jpeg_groups(service, groups, dry_run, verbose):
 
 def main():
     # read command line arguments for program options
+    if len(sys.argv) > 2:
+        # too many args
+        print(
+            f"{RED_TEXT}Only one command-line option accepted.\n" 
+            f"See{END_COLOUR} --help {RED_TEXT}for usage.{END_COLOUR}"
+        )
+        return
+
     dry_run = False
     verbose = False
     if len(sys.argv) == 2:
@@ -189,8 +197,7 @@ def main():
         else:
             print(
                 f"{RED_TEXT}Invalid command-line option.\n"
-                f"See{END_COLOUR} py file_renamer.py --help "
-                f"{RED_TEXT}for options.{END_COLOUR}"
+                f"See{END_COLOUR} --help {RED_TEXT}for options.{END_COLOUR}"
             )
             return
 
