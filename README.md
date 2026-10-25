@@ -27,13 +27,33 @@ Here are some examples:
 | `20261014_165136.jpg`, `20261014_165210.jpg` | `26-10-14_1.jpg`, `26-10-14_2.jpg` |
 | `20261014_165136.jpg`, `20261014_165157.jpg`, `20261014_165210.jpg` | `26-10-14_1.jpg`, `26-10-14_2.jpg`, `26-10-14_3.jpg`|
 
-## Setup
+## Executable File
+
+### Setup
+
+1. Download `file_renamer.exe` from GitHub Releases.
+
+2. [Configure Google Drive API credentials](https://developers.google.com/workspace/drive/api/quickstart/python#authorize_credentials_for_a_desktop_application)
+    and place your `credentials.json` file in the same folder as the `.exe` file.
+
+3. On your first run of `file_renamer.exe` (perhaps with `--dry-run` enabled),
+you will have to sign into Google and grant the requested permissions.
+
+### Usage
+
+```powershell
+./file_renamer.py [--dry-run | --verbose | --help]
+```
+
+## Python Script
+
+### Setup
 
 1. Clone this repository:
 
     ```powershell
    git clone https://github.com/Gallboy2020/google-drive-file-renamer.git
-   cd google_drive_file_renamer
+   cd google-drive-file-renamer
    ```
 
 2. Create and activate a virtual environment:
@@ -42,6 +62,9 @@ Here are some examples:
    python -m venv .venv
    .venv\Scripts\Activate.ps1
    ```
+
+   > **Note:** You may have to activate your virtual environment a different
+   > way depending on your environment.
 
 3. Install dependencies:
 
@@ -58,7 +81,7 @@ Here are some examples:
 4. [Configure Google Drive API credentials](https://developers.google.com/workspace/drive/api/quickstart/python#authorize_credentials_for_a_desktop_application)
     and place your `credentials.json` file in the project folder.
 
-## Usage
+### Usage
 
 ```powershell
 python file_renamer.py [--dry-run | --verbose | --help]
@@ -77,10 +100,7 @@ python file_renamer.py [--dry-run | --verbose | --help]
 
 - Use the `--dry-run` and `--verbose` modes to make sure you only rename the
     files you want to.
-- To see a help message, run:
-    ```powershell
-    python file_renamer.py --help
-    ```
+- To see a help message, use the `--help` option.
 - Keep your API credentials and authentication tokens private, i.e. never
     commit `credentials.json` or `token.json` to version control.
 

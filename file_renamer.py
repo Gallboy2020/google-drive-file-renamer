@@ -9,8 +9,16 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # Paths to data files
-TOKEN_PATH = path.abspath(path.join(path.dirname(__file__), 'token.json'))
-CREDS_PATH = path.abspath(path.join(path.dirname(__file__), 'credentials.json'))
+if getattr(sys, 'frozen', False):
+    # look for files beside the executable file
+    TOKEN_PATH = path.abspath(path.join(path.dirname(sys.executable), 'token.json'))
+    CREDS_PATH = path.abspath(path.join(path.dirname(sys.executable), 'credentials.json'))
+else:
+    # look for files beside the Python script
+    TOKEN_PATH = path.abspath(path.join(path.dirname(__file__), 'token.json'))
+    CREDS_PATH = path.abspath(path.join(path.dirname(__file__), 'credentials.json'))
+
+# help.txt is bundled with the executable
 HELP_PATH = path.abspath(path.join(path.dirname(__file__), 'help.txt'))
 
 # If modifying these scopes, delete the file token.json.
