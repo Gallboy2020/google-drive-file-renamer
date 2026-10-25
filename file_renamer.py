@@ -1,5 +1,5 @@
 import sys
-import os.path
+from os import path
 from re import search
 
 from google.auth.transport.requests import Request
@@ -7,6 +7,11 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+
+# Paths to data files
+TOKEN_PATH = path.abspath(path.join(path.dirname(__file__), 'token.json'))
+CREDS_PATH = path.abspath(path.join(path.dirname(__file__), 'credentials.json'))
+HELP_PATH = path.abspath(path.join(path.dirname(__file__), 'help.txt'))
 
 # If modifying these scopes, delete the file token.json.
 SCOPES = ["https://www.googleapis.com/auth/drive.metadata"]
@@ -22,8 +27,8 @@ def get_credentials():
     creds = None
 
     # Attempt to get credentials from token.json
-    if os.path.exists("token.json"):
-        creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+    if path.exists(TOKEN_PATH):
+        creds = Credentials.from_authorized_user_file(TOKEN_PATH, SCOPES)
 
     # If there are no (valid) credentials available, let the user log in
     if not creds or not creds.valid:
@@ -31,11 +36,11 @@ def get_credentials():
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                "credentials.json", SCOPES
+                CREDS_PATH, SCOPES
             )
             creds = flow.run_local_server(port=0)
         # Save the credentials for the next run
-        with open("token.json", "w") as token:
+        with open(TOKEN_PATH, "w") as token:
             token.write(creds.to_json())
 
     return creds
@@ -170,7 +175,7 @@ def main():
         elif sys.argv[1] == "--verbose":
             verbose = True
         elif sys.argv[1] == "--help":
-            with open("help.txt", "r") as f:
+            with open(HELP_PATH, "r") as f:
                 print(f.read())
             return
         else:

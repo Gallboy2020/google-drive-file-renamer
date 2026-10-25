@@ -1,6 +1,9 @@
 credentials.json
 token.json
 .env
+*.exe
+build/
+dist/
 
 .venv/
 
