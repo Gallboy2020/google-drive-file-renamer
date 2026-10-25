@@ -1,6 +1,7 @@
 Google Drive JPEG File Renamer
 
 USAGE:
+    .\file_renamer.exe [--dry-run | --verbose | --help]
     python file_renamer.py [--dry-run | --verbose | --help]
 
 DESCRIPTION:

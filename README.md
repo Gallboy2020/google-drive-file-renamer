@@ -12,6 +12,9 @@ real-world project.
 
 ## Naming Conventions
 
+The script will rename JPEG files with filenames in the format
+`YYYYMMDD_HHMMSS.jpg`.
+
 For a given JPEG file, if there are no other JPEGs with the same date in its
 folder, its new filename will be in the format `YY-MM-DD.jpg`.
 
@@ -31,7 +34,7 @@ Here are some examples:
 
 ### Setup
 
-1. Download `file_renamer.exe` from GitHub Releases.
+1. Download `file_renamer.exe` (for Windows) from GitHub Releases.
 
 2. [Configure Google Drive API credentials](https://developers.google.com/workspace/drive/api/quickstart/python#authorize_credentials_for_a_desktop_application)
     and place your `credentials.json` file in the same folder as the `.exe` file.
@@ -42,7 +45,7 @@ you will have to sign into Google and grant the requested permissions.
 ### Usage
 
 ```powershell
-./file_renamer.py [--dry-run | --verbose | --help]
+.\file_renamer.exe [--dry-run | --verbose | --help]
 ```
 
 ## Python Script
@@ -92,6 +95,9 @@ python file_renamer.py [--dry-run | --verbose | --help]
 - `--dry-run`: Preview renames without actually renaming the files
 - `--verbose`: Rename files as normal but print each operation
 - `--help`: Show a help message and exit
+
+> **Note:** Running with no options will rename files without descriptive
+> output.
 
 > **Note:** All of these options are mutually exclusive, i.e. the script only
 > accepts one of the three.
