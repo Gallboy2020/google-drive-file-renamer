@@ -4,6 +4,9 @@ This is a script that will batch rename JPEG files on your Google Drive based
 on the date and time in the existing filename. It will rename files with
 filenames in the format `YYYYMMDD_HHMMSS.jpg`.
 
+This is a hobby project of mine to learn about APIs and the Git workflow for a
+real-world project.
+
 > **Note:** The commands below use `python` as an example. Depending on your
 > system, you may have to use `python`, `python3`, or `py` to invoke Python.
 
@@ -29,7 +32,7 @@ Here are some examples:
 1. Clone this repository:
 
     ```powershell
-   git clone <repository-url>
+   git clone https://github.com/Gallboy2020/google-drive-file-renamer.git
    cd google_drive_file_renamer
    ```
 
